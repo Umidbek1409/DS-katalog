@@ -23,18 +23,18 @@
   </select>
 </div>
 
-<div class="table-container">
+<div class="table-container table-scroll">
   <table>
     <thead>
       <tr>
-        <th>Rasm</th>
-        <th>Nomi</th>
-        <th>Kategoriya</th>
-        <th>Narx</th>
-        <th>Tartib</th>
-        <th>Status</th>
-        <th>Mavjud</th>
-        <th>Amallar</th>
+        <th class="col-thumb">Rasm</th>
+        <th class="col-name">Nomi</th>
+        <th class="col-category">Kategoriya</th>
+        <th class="col-price">Narx</th>
+        <th class="col-order">Tartib</th>
+        <th class="col-status">Status</th>
+        <th class="col-toggle">Mavjud</th>
+        <th class="col-actions">Amallar</th>
       </tr>
     </thead>
     <tbody>
@@ -146,4 +146,19 @@ function toggleAvailability(checkbox) {
   });
 }
 </script>
+
+<style>
+  .table-scroll table {
+    min-width: 750px;
+  }
+
+  .col-thumb { width: 60px; }
+  .col-name { min-width: 120px; }
+  .col-category { min-width: 100px; }
+  .col-price { min-width: 90px; white-space: nowrap; }
+  .col-order { min-width: 70px; }
+  .col-status { min-width: 90px; }
+  .col-toggle { min-width: 70px; }
+  .col-actions { min-width: 160px; }
+</style>
 {% endblock %}

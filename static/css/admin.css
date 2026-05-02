@@ -220,6 +220,25 @@ body {
   overflow: hidden;
 }
 
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.table-scroll::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.table-scroll::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
@@ -463,5 +482,18 @@ tr:hover {
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
+  }
+
+  .filter-bar {
+    flex-wrap: wrap;
+  }
+
+  .table-container {
+    margin: 0 -8px;
+    border-radius: 0;
+  }
+
+  .form-card {
+    padding: 16px;
   }
 }

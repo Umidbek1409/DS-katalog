@@ -28,16 +28,16 @@
 </div>
 
 {% if products %}
-<div class="table-container">
+<div class="table-container table-scroll">
   <table>
     <thead>
       <tr>
-        <th>Rasm</th>
-        <th>Nomi</th>
-        <th>Kategoriya</th>
-        <th>Narx</th>
-        <th>Status</th>
-        <th>Amallar</th>
+        <th class="col-thumb">Rasm</th>
+        <th class="col-name">Nomi</th>
+        <th class="col-category">Kategoriya</th>
+        <th class="col-price">Narx</th>
+        <th class="col-status">Status</th>
+        <th class="col-actions">Amallar</th>
       </tr>
     </thead>
     <tbody>
@@ -78,6 +78,29 @@
 {% endif %}
 
 <style>
+  .table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .table-scroll table {
+    min-width: 650px;
+  }
+
+  .table-scroll::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .table-scroll::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+  }
+
+  .table-scroll::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+  }
+
   .info-banner {
     background: #e8f4fd;
     border-left: 4px solid #2196f3;
@@ -126,5 +149,12 @@
     font-size: 1.1rem;
     margin: 0;
   }
+
+  .col-thumb { width: 60px; }
+  .col-name { min-width: 120px; }
+  .col-category { min-width: 100px; }
+  .col-price { min-width: 80px; white-space: nowrap; }
+  .col-status { min-width: 110px; }
+  .col-actions { min-width: 160px; }
 </style>
 {% endblock %}

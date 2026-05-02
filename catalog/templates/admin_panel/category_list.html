@@ -8,15 +8,15 @@
   <a href="{% url 'admin_category_add' %}" class="btn btn-primary">+ Kategoriya qo'shish</a>
 </div>
 
-<div class="table-container">
+<div class="table-container table-scroll">
   <table>
     <thead>
       <tr>
-        <th>Rasm</th>
-        <th>Nomi</th>
-        <th>Mahsulotlar</th>
-        <th>Tartib</th>
-        <th>Amallar</th>
+        <th class="col-thumb">Rasm</th>
+        <th class="col-name">Nomi</th>
+        <th class="col-count">Mahsulotlar</th>
+        <th class="col-order">Tartib</th>
+        <th class="col-actions">Amallar</th>
       </tr>
     </thead>
     <tbody>
@@ -48,4 +48,12 @@
     </tbody>
   </table>
 </div>
+
+<style>
+  .col-thumb { width: 60px; }
+  .col-name { min-width: 120px; }
+  .col-count { min-width: 80px; }
+  .col-order { min-width: 60px; }
+  .col-actions { min-width: 160px; }
+</style>
 {% endblock %}
