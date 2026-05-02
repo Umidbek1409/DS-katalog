@@ -1,1 +1,1 @@
-web: python create_admin.py && gunicorn catalogue_web.wsgi --log-file -
+web: gunicorn catalogue_web.wsgi --log-file -
