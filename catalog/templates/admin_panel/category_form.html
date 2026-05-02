@@ -1,0 +1,32 @@
+{% extends 'admin_panel/base.html' %}
+{% block title %}{% if category %}Tahrirlash{% else %}Qo'shish{% endif %} - Admin Panel{% endblock %}
+{% block topbar_title %}{% if category %}Kategoriyani tahrirlash{% else %}Yangi kategoriya{% endif %}{% endblock %}
+
+{% block content %}
+<div class="form-card">
+  <h2>{% if category %}Kategoriyani tahrirlash{% else %}Yangi kategoriya qo'shish{% endif %}</h2>
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="form-group">
+      <label for="name">Kategoriya nomi *</label>
+      <input type="text" id="name" name="name" value="{% if name %}{{ name }}{% elif category %}{{ category.name }}{% endif %}" required>
+      {% if errors.name %}<div class="error-text">{{ errors.name }}</div>{% endif %}
+    </div>
+    <div class="form-group">
+      <label for="image">Rasm</label>
+      {% if category and category.image %}
+      <div style="margin-bottom:8px;"><img src="{{ category.image.url }}" alt="" style="max-width:150px;border-radius:4px;"></div>
+      {% endif %}
+      <input type="file" id="image" name="image" accept="image/*">
+    </div>
+    <div class="form-group">
+      <label for="order">Tartib raqami</label>
+      <input type="number" id="order" name="order" value="{% if order is not None %}{{ order }}{% elif category %}{{ category.order }}{% else %}0{% endif %}" min="0">
+    </div>
+    <div style="display:flex;gap:12px;margin-top:20px;">
+      <button type="submit" class="btn btn-primary">Saqlash</button>
+      <a href="{% url 'admin_category_list' %}" class="btn" style="background:#6c757d;color:#fff;">Bekor qilish</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

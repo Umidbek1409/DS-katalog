@@ -1,0 +1,51 @@
+{% extends 'admin_panel/base.html' %}
+{% block title %}Kategoriyalar - Admin Panel{% endblock %}
+{% block topbar_title %}Kategoriyalar{% endblock %}
+
+{% block content %}
+<div class="action-row">
+  <h2>Kategoriyalar ro'yxati</h2>
+  <a href="{% url 'admin_category_add' %}" class="btn btn-primary">+ Kategoriya qo'shish</a>
+</div>
+
+<div class="table-container">
+  <table>
+    <thead>
+      <tr>
+        <th>Rasm</th>
+        <th>Nomi</th>
+        <th>Mahsulotlar</th>
+        <th>Tartib</th>
+        <th>Amallar</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for category in categories %}
+      <tr>
+        <td>
+          {% if category.image %}
+          <img src="{{ category.image.url }}" alt="{{ category.name }}" class="thumb">
+          {% else %}
+          <div class="thumb-placeholder">Rasm yo'q</div>
+          {% endif %}
+        </td>
+        <td>{{ category.name }}</td>
+        <td>{{ category.product_count }}</td>
+        <td>{{ category.order }}</td>
+        <td>
+          <a href="{% url 'admin_category_edit' category.id %}" class="btn btn-primary btn-sm">Tahrirlash</a>
+          <form method="post" action="{% url 'admin_category_delete' category.id %}" style="display:inline;" onsubmit="return confirm('Rostdan ham o\'chirmoqchimisiz?')">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger btn-sm">O'chirish</button>
+          </form>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="5" style="text-align:center;padding:40px;color:#999;">Hozircha kategoriyalar yo'q</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

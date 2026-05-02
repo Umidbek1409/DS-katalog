@@ -1,0 +1,25 @@
+{% extends 'admin_panel/base.html' %}
+{% block title %}Dashboard - Admin Panel{% endblock %}
+{% block topbar_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="metric-cards">
+  <div class="metric-card">
+    <h3>Kategoriyalar</h3>
+    <div class="value">{{ total_categories }}</div>
+  </div>
+  <div class="metric-card">
+    <h3>Mahsulotlar</h3>
+    <div class="value">{{ total_products }}</div>
+  </div>
+  <div class="metric-card">
+    <h3>Mavjud mahsulotlar</h3>
+    <div class="value">{{ available_products }}</div>
+  </div>
+</div>
+
+<div style="display:flex;gap:12px;">
+  <a href="{% url 'admin_category_add' %}" class="btn btn-primary">+ Kategoriya qo'shish</a>
+  <a href="{% url 'admin_product_add' %}" class="btn btn-success">+ Mahsulot qo'shish</a>
+</div>
+{% endblock %}

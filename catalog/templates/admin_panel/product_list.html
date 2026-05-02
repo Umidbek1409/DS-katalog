@@ -1,0 +1,149 @@
+{% extends 'admin_panel/base.html' %}
+{% block title %}Mahsulotlar - Admin Panel{% endblock %}
+{% block topbar_title %}Mahsulotlar{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<div class="action-row">
+  <h2>Mahsulotlar ro'yxati</h2>
+  <div style="display:flex; gap:10px; align-items:center;">
+    <button class="btn btn-success" onclick="saveOrder()">Tartibni saqlash</button>
+    <span id="order-success-msg" style="color:#28a745; display:none;">Tartib saqlandi!</span>
+    <a href="{% url 'admin_product_add' %}" class="btn btn-success">+ Mahsulot qo'shish</a>
+  </div>
+</div>
+
+<div class="filter-bar">
+  <label for="category-filter">Kategoriya bo'yicha:</label>
+  <select id="category-filter" onchange="window.location.href='?category='+this.value">
+    <option value="">Barchasi</option>
+    {% for cat in categories %}
+    <option value="{{ cat.id }}" {% if selected_category == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
+    {% endfor %}
+  </select>
+</div>
+
+<div class="table-container">
+  <table>
+    <thead>
+      <tr>
+        <th>Rasm</th>
+        <th>Nomi</th>
+        <th>Kategoriya</th>
+        <th>Narx</th>
+        <th>Tartib</th>
+        <th>Status</th>
+        <th>Mavjud</th>
+        <th>Amallar</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for product in products %}
+      <tr>
+        <td>
+          {% if product.image %}
+          <img src="{{ product.image.url }}" alt="{{ product.name }}" class="thumb">
+          {% else %}
+          <div class="thumb-placeholder">Rasm yo'q</div>
+          {% endif %}
+        </td>
+        <td>{{ product.name }}</td>
+        <td>{{ product.category.name }}</td>
+        <td>{{ product.price|floatformat:0 }} so'm</td>
+        <td>
+          <input type="number" class="order-input" value="{{ product.order }}"
+                 data-product-id="{{ product.id }}" min="0" style="width:60px; padding:4px;">
+        </td>
+        <td>
+          {% if product.is_currently_new %}
+          <span style="color:#28a745;">&#9679; Yangi</span>
+          {% else %}
+          <span style="color:#999;">&#9679; Oddiy</span>
+          {% endif %}
+        </td>
+        <td>
+          <label class="toggle">
+            <input type="checkbox" {% if product.is_available %}checked{% endif %} data-product-id="{{ product.id }}" onchange="toggleAvailability(this)">
+            <span class="toggle-slider"></span>
+          </label>
+        </td>
+        <td>
+          <a href="{% url 'admin_product_edit' product.id %}" class="btn btn-primary btn-sm">Tahrirlash</a>
+          <form method="post" action="{% url 'admin_product_delete' product.id %}" style="display:inline;" onsubmit="return confirm('Rostdan ham o\'chirmoqchimisiz?')">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger btn-sm">O'chirish</button>
+          </form>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="8" style="text-align:center;padding:40px;color:#999;">Hozircha mahsulotlar yo'q</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<script>
+function getCSRFToken() {
+  return document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+}
+
+function saveOrder() {
+  const inputs = document.querySelectorAll('.order-input');
+  const orders = [];
+  inputs.forEach(input => {
+    orders.push({
+      id: parseInt(input.dataset.productId),
+      order: parseInt(input.value) || 0
+    });
+  });
+
+  fetch('{% url "admin_product_update_order" %}', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': getCSRFToken()
+    },
+    body: JSON.stringify({ orders: orders })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      const msg = document.getElementById('order-success-msg');
+      msg.style.display = 'inline';
+      setTimeout(() => { msg.style.display = 'none'; }, 3000);
+    }
+  });
+}
+
+function toggleAvailability(checkbox) {
+  const productId = checkbox.dataset.productId;
+  const isAvailable = checkbox.checked;
+  const url = '/admin-panel/products/toggle-availability/';
+  
+  const formData = new FormData();
+  formData.append('product_id', productId);
+  formData.append('is_available', isAvailable);
+  formData.append('csrfmiddlewaretoken', getCSRFToken());
+
+  fetch(url, {
+    method: 'POST',
+    body: formData
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (!data.success) {
+      checkbox.checked = !checkbox.checked;
+      alert('Xatolik yuz berdi. Iltimos qayta urinib ko\'ring.');
+    } else {
+      window.location.reload();
+    }
+  })
+  .catch(() => {
+    checkbox.checked = !checkbox.checked;
+    alert('Tarmoq xatoligi. Iltimos qayta urinib ko\'ring.');
+  });
+}
+</script>
+{% endblock %}

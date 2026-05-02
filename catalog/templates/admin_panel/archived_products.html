@@ -1,0 +1,118 @@
+{% extends 'admin_panel/base.html' %}
+{% block title %}Yo'q mahsulotlar - Admin Panel{% endblock %}
+{% block topbar_title %}Yo'q mahsulotlar{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+
+<div class="action-row">
+  <h2>Katalogda qolmagan mahsulotlar</h2>
+  <div style="display:flex; gap:10px; align-items:center;">
+    <a href="{% url 'admin_product_add' %}" class="btn btn-success">+ Yangi mahsulot qo'shish</a>
+    <a href="{% url 'admin_product_list' %}" class="btn btn-primary">Mavjud mahsulotlar</a>
+  </div>
+</div>
+
+<div class="info-banner">
+  <p>Bu yerda katalogdan olib tashlangan (mavjud emas) mahsulotlar ko'rsatiladi. Agar xohlasangiz, mahsulotni qayta tiklab, kataloggaga qaytarishingiz mumkin.</p>
+</div>
+
+<div class="filter-bar">
+  <label for="category-filter">Kategoriya bo'yicha:</label>
+  <select id="category-filter" onchange="window.location.href='?category='+this.value">
+    <option value="">Barchasi</option>
+    {% for cat in categories %}
+    <option value="{{ cat.id }}" {% if selected_category == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
+    {% endfor %}
+  </select>
+</div>
+
+{% if products %}
+<div class="table-container">
+  <table>
+    <thead>
+      <tr>
+        <th>Rasm</th>
+        <th>Nomi</th>
+        <th>Kategoriya</th>
+        <th>Narx</th>
+        <th>Status</th>
+        <th>Amallar</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for product in products %}
+      <tr class="archived-row">
+        <td>
+          {% if product.image %}
+          <img src="{{ product.image.url }}" alt="{{ product.name }}" class="thumb" style="opacity:0.6;">
+          {% else %}
+          <div class="thumb-placeholder">Rasm yo'q</div>
+          {% endif %}
+        </td>
+        <td>{{ product.name }}</td>
+        <td>{{ product.category.name }}</td>
+        <td>{{ product.price|floatformat:0 }} so'm</td>
+        <td>
+          <span style="color:#dc3545;">&#9679; Mavjud emas</span>
+        </td>
+        <td>
+          <form method="post" action="{% url 'admin_restore_product' product.id %}" style="display:inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-success btn-sm">Tiklash</button>
+          </form>
+          <form method="post" action="{% url 'admin_product_delete' product.id %}" style="display:inline;" onsubmit="return confirm('Rostdan ham butunlay o\'chirmoqchimisiz? Bu amalni qaytarib bo\'lmaydi!')">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger btn-sm">O'chirish</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="empty-banner">
+  <p>Hozircha yo'q mahsulotlar yo'q.</p>
+</div>
+{% endif %}
+
+<style>
+  .info-banner {
+    background: #e8f4fd;
+    border-left: 4px solid #2196f3;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+    border-radius: 0 8px 8px 0;
+  }
+
+  .info-banner p {
+    margin: 0;
+    color: #1565c0;
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+
+  .archived-row {
+    background: #fafafa;
+  }
+
+  .archived-row td {
+    opacity: 0.85;
+  }
+
+  .empty-banner {
+    background: #fff;
+    border-radius: 8px;
+    padding: 60px 20px;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+
+  .empty-banner p {
+    color: #999;
+    font-size: 1.1rem;
+    margin: 0;
+  }
+</style>
+{% endblock %}

@@ -1,0 +1,148 @@
+{% extends 'admin_panel/base.html' %}
+{% load static %}
+{% block title %}{% if product %}Tahrirlash{% else %}Qo'shish{% endif %} - Admin Panel{% endblock %}
+{% block topbar_title %}{% if product %}Mahsulotni tahrirlash{% else %}Yangi mahsulot{% endif %}{% endblock %}
+
+{% block content %}
+<div class="form-card">
+  <h2>{% if product %}Mahsulotni tahrirlash{% else %}Yangi mahsulot qo'shish{% endif %}</h2>
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="form-group">
+      <label for="name">Mahsulot nomi *</label>
+      <input type="text" id="name" name="name" value="{% if name %}{{ name }}{% elif product %}{{ product.name }}{% endif %}" required>
+      {% if errors.name %}<div class="error-text">{{ errors.name }}</div>{% endif %}
+    </div>
+    <div class="form-group">
+      <label for="category">Kategoriya *</label>
+      <select id="category" name="category" required>
+        <option value="">Tanlang...</option>
+        {% for cat in categories %}
+        <option value="{{ cat.id }}" {% if category_id == cat.id|stringformat:"s" or product and product.category_id == cat.id %}selected{% endif %}>{{ cat.name }}</option>
+        {% endfor %}
+      </select>
+      {% if errors.category %}<div class="error-text">{{ errors.category }}</div>{% endif %}
+    </div>
+    <div class="form-group">
+      <label for="price">Narx (so'm) *</label>
+      <input type="number" id="price" name="price" step="0.01" value="{% if price %}{{ price }}{% elif product %}{{ product.price }}{% endif %}" required>
+      {% if errors.price %}<div class="error-text">{{ errors.price }}</div>{% endif %}
+    </div>
+    <div class="form-group">
+      <label for="description">Tavsif</label>
+      <textarea id="description" name="description">{% if description %}{{ description }}{% elif product %}{{ product.description }}{% endif %}</textarea>
+    {% if errors.description %}<div class="error-text">{{ errors.description }}</div>{% endif %}
+    </div>
+    <div class="form-group">
+      <label for="image">Rasm {% if not product %}*{% endif %}</label>
+      {% if product and product.image %}
+      <div style="margin-bottom:8px;"><img src="{{ product.image.url }}" alt="" style="max-width:200px;border-radius:4px;"></div>
+      {% endif %}
+      <input type="file" id="image" name="image" accept="image/*" {% if not product %}required{% endif %}>
+      {% if errors.image %}<div class="error-text">{{ errors.image }}</div>{% endif %}
+    </div>
+    <div class="form-group">
+      <div class="checkbox-group">
+        <input type="checkbox" id="is_available" name="is_available" {% if is_available or product and product.is_available %}checked{% endif %}>
+        <label for="is_available">Mavjud</label>
+      </div>
+    </div>
+    <div class="form-group">
+      <label for="order">Tartib raqami</label>
+      <input type="number" id="order" name="order" value="{% if order is not None %}{{ order }}{% elif product %}{{ product.order }}{% else %}0{% endif %}" min="0">
+    </div>
+    <div class="form-group">
+      <div class="checkbox-group">
+        <input type="checkbox" id="is_new" name="is_new" {% if is_new or product and product.is_new %}checked{% endif %}>
+        <label for="is_new">NEW belgisini ko'rsatish</label>
+      </div>
+    </div>
+    <div class="form-group">
+      <div class="checkbox-group">
+        <input type="checkbox" id="new_badge_enabled" name="new_badge_enabled" {% if new_badge_enabled or product and product.new_badge_enabled %}checked{% endif %}>
+        <label for="new_badge_enabled">NEW funksiyasi faol</label>
+      </div>
+    </div>
+    <div class="form-group">
+      <label for="new_until">NEW belgisi qachon tugaydi (bo'sh qoldirsangiz avtomatik 7 kun)</label>
+      <input type="datetime-local" id="new_until" name="new_until" value="{% if new_until %}{{ new_until }}{% elif product and product.new_until %}{{ product.new_until|date:'Y-m-d\TH:i' }}{% endif %}">
+    </div>
+    <div class="form-group">
+      <label for="units_per_box">1 qutida necha dona</label>
+      <input type="number" id="units_per_box" name="units_per_box" value="{% if units_per_box is not None %}{{ units_per_box }}{% elif product %}{{ product.units_per_box }}{% else %}1{% endif %}" min="1">
+    </div>
+    <div style="display:flex;gap:12px;margin-top:20px;">
+      <button type="submit" class="btn btn-primary">Saqlash</button>
+      <a href="{% url 'admin_product_list' %}" class="btn" style="background:#6c757d;color:#fff;">Bekor qilish</a>
+    </div>
+  </form>
+</div>
+
+{% if product %}
+<div class="move-image-section">
+  <h3>Boshqa kategoriya uchun rasmni ko'chirish</h3>
+  <div class="move-image-preview">
+    {% if product.image %}
+    <img src="{{ product.image.url }}" alt="{{ product.name }}">
+    {% else %}
+    <p style="color:#999;">Bu mahsulotda rasm yo'q</p>
+    {% endif %}
+  </div>
+  <div class="form-group">
+    <label for="target-category">Maqsad kategoriya</label>
+    <select id="target-category">
+      <option value="">Tanlang...</option>
+      {% for cat in categories %}
+      {% if cat.id != product.category_id %}
+      <option value="{{ cat.id }}">{{ cat.name }}</option>
+      {% endif %}
+      {% endfor %}
+    </select>
+  </div>
+  <button id="moveImageBtn" class="btn btn-primary" {% if not product.image %}disabled{% endif %}>
+    Ushbu rasmni tanlangan kategoriya uchun qo'yish
+  </button>
+  <div id="moveImageMsg" style="margin-top:12px;"></div>
+</div>
+
+<script>
+  function getCSRFToken() {
+    return document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+  }
+
+  document.getElementById('moveImageBtn')?.addEventListener('click', function() {
+    var targetCat = document.getElementById('target-category').value;
+    if (!targetCat) {
+      document.getElementById('moveImageMsg').innerHTML = '<span style="color:#dc3545;">Kategoriya tanlang</span>';
+      return;
+    }
+    this.disabled = true;
+    this.textContent = 'Ko\'chirilmoqda...';
+
+    var formData = new FormData();
+    formData.append('target_category', targetCat);
+    formData.append('csrfmiddlewaretoken', getCSRFToken());
+
+    fetch('{% url "admin_product_move_image" product.id %}', {
+      method: 'POST',
+      body: formData
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.success) {
+        document.getElementById('moveImageMsg').innerHTML = '<span style="color:#28a745;">' + data.message + '</span>';
+      } else {
+        document.getElementById('moveImageMsg').innerHTML = '<span style="color:#dc3545;">' + (data.error || 'Xatolik yuz berdi') + '</span>';
+      }
+    })
+    .catch(function() {
+      document.getElementById('moveImageMsg').innerHTML = '<span style="color:#dc3545;">Tarmoq xatoligi</span>';
+    })
+    .finally(function() {
+      document.getElementById('moveImageBtn').disabled = false;
+      document.getElementById('moveImageBtn').textContent = 'Ushbu rasmni tanlangan kategoriya uchun qo\'yish';
+    });
+  });
+</script>
+{% endif %}
+{% endblock %}

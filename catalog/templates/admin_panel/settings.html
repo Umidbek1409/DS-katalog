@@ -1,0 +1,300 @@
+{% extends 'admin_panel/base.html' %}
+
+{% block title %}Sozlamalar - Admin Panel{% endblock %}
+
+{% block topbar_title %}Sozlamalar{% endblock %}
+
+{% block extra_css %}
+<style>
+  .settings-container {
+    max-width: 700px;
+  }
+
+  .settings-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 32px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+
+  .settings-card h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1a1a2e;
+    margin-bottom: 8px;
+  }
+
+  .settings-description {
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 28px;
+    line-height: 1.5;
+  }
+
+  .settings-form .form-group {
+    margin-bottom: 24px;
+  }
+
+  .settings-form label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 8px;
+  }
+
+  .settings-form label .label-hint {
+    font-weight: 400;
+    color: #888;
+    font-size: 0.8rem;
+  }
+
+  .settings-form input[type="text"],
+  .settings-form input[type="password"] {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1.5px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    color: #1a1a2e;
+    background: #fafafa;
+    transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+  }
+
+  .settings-form input[type="text"]:focus,
+  .settings-form input[type="password"]:focus {
+    outline: none;
+    border-color: #1a1a2e;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(26, 26, 46, 0.08);
+  }
+
+  .settings-form .input-icon-wrapper {
+    position: relative;
+  }
+
+  .settings-form .input-icon-wrapper input {
+    padding-right: 44px;
+  }
+
+  .settings-form .toggle-visibility {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #888;
+    font-size: 1.1rem;
+    padding: 4px;
+    transition: color 0.2s;
+  }
+
+  .settings-form .toggle-visibility:hover {
+    color: #1a1a2e;
+  }
+
+  .settings-divider {
+    height: 1px;
+    background: #eee;
+    margin: 28px 0;
+  }
+
+  .settings-section-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #1a1a2e;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .settings-section-title .icon {
+    font-size: 1.1rem;
+  }
+
+  .form-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid #eee;
+  }
+
+  .btn-save {
+    padding: 12px 28px;
+    background: #1a1a2e;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+  }
+
+  .btn-save:hover {
+    background: #2d2d4e;
+  }
+
+  .btn-save:active {
+    transform: scale(0.98);
+  }
+
+  .btn-reset {
+    padding: 12px 20px;
+    background: #fff;
+    color: #666;
+    border: 1.5px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+  }
+
+  .btn-reset:hover {
+    background: #f5f5f5;
+    border-color: #ccc;
+  }
+
+  .error-text {
+    color: #dc3545;
+    font-size: 0.8rem;
+    margin-top: 6px;
+  }
+
+  .updated-info {
+    font-size: 0.8rem;
+    color: #888;
+    margin-top: 16px;
+    font-style: italic;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="settings-container">
+  <div class="settings-card">
+    <h2>Sayt sozlamalari</h2>
+    <p class="settings-description">Sayt nomi va Telegram integratsiyasi sozlamalarini o'zgartiring. O'zgarishlar darhol kuchga kiradi.</p>
+
+    <form method="POST" class="settings-form">
+      {% csrf_token %}
+
+      <div class="form-group">
+        <label for="site_name">Sayt nomi</label>
+        <input type="text" id="site_name" name="site_name" value="{{ site_name|default:site_settings.site_name }}" placeholder="Masalan: Katalog.uz">
+        {% if errors.site_name %}<div class="error-text">{{ errors.site_name }}</div>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label for="contact_info">
+          Bog'lanish ma'lumoti
+          <span class="label-hint">— saytda ko'rsatiladigan kontakt ma'lumoti</span>
+        </label>
+        <input type="text" id="contact_info" name="contact_info" value="{{ contact_info|default:site_settings.contact_info }}" placeholder="Masalan: Bog'lanish: +998 90 123 45 67">
+        {% if errors.contact_info %}<div class="error-text">{{ errors.contact_info }}</div>{% endif %}
+      </div>
+
+      <div class="settings-divider"></div>
+
+      <div class="settings-section-title">
+        <span class="icon">&#9993;</span>
+        Telegram sozlamalari
+      </div>
+
+      <div class="form-group">
+        <label for="telegram_bot_token">
+          Bot token
+          <span class="label-hint">— @BotFather dan olingan token</span>
+        </label>
+        <div class="input-icon-wrapper">
+          <input type="password" id="telegram_bot_token" name="telegram_bot_token" value="{{ telegram_bot_token|default:site_settings.telegram_bot_token }}" placeholder="123456789:ABCdefGHIjklMNOpqrsTUVwxyz">
+          <button type="button" class="toggle-visibility" onclick="togglePassword('telegram_bot_token', this)">&#128065;</button>
+        </div>
+        {% if errors.telegram_bot_token %}<div class="error-text">{{ errors.telegram_bot_token }}</div>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label for="telegram_group_id">
+          Guruh ID
+          <span class="label-hint">— yangi mahsulotlar xabarlari yuboriladigan guruh</span>
+        </label>
+        <input type="text" id="telegram_group_id" name="telegram_group_id" value="{{ telegram_group_id|default:site_settings.telegram_group_id }}" placeholder="Masalan: -1001234567890">
+        {% if errors.telegram_group_id %}<div class="error-text">{{ errors.telegram_group_id }}</div>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label for="telegram_owner_id">
+          Shaxsiy chat ID
+          <span class="label-hint">— buyurtmalar xabarlari yuboriladigan chat</span>
+        </label>
+        <input type="text" id="telegram_owner_id" name="telegram_owner_id" value="{{ telegram_owner_id|default:site_settings.telegram_owner_id }}" placeholder="Masalan: 123456789">
+        {% if errors.telegram_owner_id %}<div class="error-text">{{ errors.telegram_owner_id }}</div>{% endif %}
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn-save">Saqlash</button>
+        <button type="button" class="btn-reset" onclick="location.reload()">Bekor qilish</button>
+      </div>
+
+      {% if site_settings.updated_at %}
+      <div class="updated-info">Oxirgi yangilanish: {{ site_settings.updated_at|date:"d.m.Y H:i" }}</div>
+      {% endif %}
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function togglePassword(inputId, btn) {
+    const input = document.getElementById(inputId);
+    if (input.type === 'password') {
+      input.type = 'text';
+      btn.innerHTML = '&#128064;';
+    } else {
+      input.type = 'password';
+      btn.innerHTML = '&#128065;';
+    }
+  }
+
+  const originalValues = {
+    telegram_bot_token: "{{ site_settings.telegram_bot_token }}",
+    telegram_group_id: "{{ site_settings.telegram_group_id }}",
+    telegram_owner_id: "{{ site_settings.telegram_owner_id }}",
+  };
+
+  const form = document.querySelector('.settings-form');
+  form.addEventListener('submit', function(e) {
+    const currentToken = document.getElementById('telegram_bot_token').value;
+    const currentGroupId = document.getElementById('telegram_group_id').value;
+    const currentOwnerId = document.getElementById('telegram_owner_id').value;
+
+    const hasChanges = (
+      currentToken !== originalValues.telegram_bot_token ||
+      currentGroupId !== originalValues.telegram_group_id ||
+      currentOwnerId !== originalValues.telegram_owner_id
+    );
+
+    if (hasChanges) {
+      e.preventDefault();
+      const confirmed = confirm(
+        "⚠️ DIQQAT!\n\n" +
+        "Telegram sozlamalari (bot token, guruh ID yoki shaxsiy chat ID) o'zgartirilmoqda.\n\n" +
+        "Bu o'zgarishlar sayt ishlashiga ta'sir qiladi:\n" +
+        "• Yangi mahsulot xabarlari boshqa guruhga yuborilishi mumkin\n" +
+        "• Buyurtmalar boshqa chatga yuborilishi mumkin\n" +
+        "• Eski token ishlamay qolishi mumkin\n\n" +
+        "Haqiqatdan ham aminmisiz?"
+      );
+      if (confirmed) {
+        form.submit();
+      }
+    }
+  });
+</script>
+{% endblock %}
