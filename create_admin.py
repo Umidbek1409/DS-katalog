@@ -11,9 +11,9 @@ django.setup()
 
 from django.contrib.auth.models import User
 
-username = 'gulom5001'
-password = 'umidbek1409'
-email = ''
+username = os.environ.get('ADMIN_USERNAME', 'gulom5001')
+password = os.environ.get('ADMIN_PASSWORD', 'umidbek1409')
+email = os.environ.get('ADMIN_EMAIL', '')
 
 try:
     user = User.objects.get(username=username)
