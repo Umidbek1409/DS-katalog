@@ -140,6 +140,37 @@ def send_telegram_product_restored(product, price_changed=False, old_price=None,
         print(f"Telegram error: {e}")
 
 
+def send_telegram_product_unavailable(product):
+    tg = get_telegram_settings()
+    token = tg['token']
+    group_id = tg['group_id']
+    
+    caption = (
+        f"⛔ MAHSULOT QOLMADI\n\n"
+        f"📦 {product.name}\n"
+        f"💰 {product.price:,.0f} so'm\n"
+        f"🗃 1 qutida: {product.units_per_box} dona\n\n"
+        f"Bu mahsulot hozirda katalogda ko'rsatilmaydi."
+    )
+    
+    try:
+        if product.image:
+            url = f"https://api.telegram.org/bot{token}/sendPhoto"
+            with open(product.image.path, 'rb') as photo:
+                requests.post(url, data={
+                    "chat_id": group_id,
+                    "caption": caption
+                }, files={"photo": photo})
+        else:
+            url = f"https://api.telegram.org/bot{token}/sendMessage"
+            requests.post(url, data={
+                "chat_id": group_id,
+                "text": caption
+            })
+    except Exception as e:
+        print(f"Telegram error: {e}")
+
+
 def index(request):
     categories = Category.objects.filter(products__isnull=False).distinct().order_by('order', 'name')
     products = Product.objects.filter(is_available=True).select_related('category').annotate(
@@ -547,8 +578,11 @@ def toggle_product_availability(request):
     product_id = request.POST.get('product_id')
     is_available = request.POST.get('is_available') == 'true'
     product = get_object_or_404(Product, id=product_id)
+    was_available = product.is_available
     product.is_available = is_available
     product.save()
+    if was_available and not is_available:
+        send_telegram_product_unavailable(product)
     return JsonResponse({'success': True})
 
 
