@@ -6,7 +6,7 @@
 {% csrf_token %}
 
 <div class="action-row">
-  <h2>Katalogda qolmagan mahsulotlar</h2>
+  <h2>Katalogda qolmagan mahsulotlar <span class="count-badge">{{ products|length }} ta</span></h2>
   <div style="display:flex; gap:10px; align-items:center;">
     <a href="{% url 'admin_product_add' %}" class="btn btn-success">+ Yangi mahsulot qo'shish</a>
     <a href="{% url 'admin_product_list' %}" class="btn btn-primary">Mavjud mahsulotlar</a>
@@ -91,6 +91,18 @@
     color: #1565c0;
     font-size: 0.9rem;
     line-height: 1.5;
+  }
+
+  .count-badge {
+    display: inline-block;
+    background: #dc3545;
+    color: #fff;
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 2px 10px;
+    border-radius: 12px;
+    vertical-align: middle;
+    margin-left: 8px;
   }
 
   .archived-row {

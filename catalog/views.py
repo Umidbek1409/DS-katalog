@@ -97,6 +97,49 @@ def send_telegram_price_change(product, old_price, new_price):
         print(f"Telegram error: {e}")
 
 
+def send_telegram_product_restored(product, price_changed=False, old_price=None, new_price=None):
+    tg = get_telegram_settings()
+    token = tg['token']
+    group_id = tg['group_id']
+    
+    if price_changed and old_price is not None and new_price is not None:
+        price_diff = new_price - old_price
+        if price_diff > 0:
+            arrow = "⬆️"
+        else:
+            arrow = "⬇️"
+        caption = (
+            f"✅ MAHSULOT MAVJUD (narx o'zgardi)\n\n"
+            f"📦 {product.name}\n"
+            f"💵 Yangi narx: {new_price:,.0f} so'm {'(+)' if price_diff > 0 else ''}{price_diff:,.0f} so'm {arrow}\n"
+            f"🗃 1 qutida: {product.units_per_box} dona"
+        )
+    else:
+        caption = (
+            f"✅ MAHSULOT MAVJUD\n\n"
+            f"📦 {product.name}\n"
+            f"💰 {product.price:,.0f} so'm\n"
+            f"🗃 1 qutida: {product.units_per_box} dona"
+        )
+    
+    try:
+        if product.image:
+            url = f"https://api.telegram.org/bot{token}/sendPhoto"
+            with open(product.image.path, 'rb') as photo:
+                requests.post(url, data={
+                    "chat_id": group_id,
+                    "caption": caption
+                }, files={"photo": photo})
+        else:
+            url = f"https://api.telegram.org/bot{token}/sendMessage"
+            requests.post(url, data={
+                "chat_id": group_id,
+                "text": caption
+            })
+    except Exception as e:
+        print(f"Telegram error: {e}")
+
+
 def index(request):
     categories = Category.objects.filter(products__isnull=False).distinct().order_by('order', 'name')
     products = Product.objects.filter(is_available=True).select_related('category').annotate(
@@ -527,7 +570,15 @@ def archived_products(request):
 @admin_required
 def restore_product(request, product_id):
     product = get_object_or_404(Product, id=product_id)
+    price_changed = False
+    old_price = None
+    new_price = None
+    if product.show_price_change and product.previous_price:
+        price_changed = True
+        old_price = product.previous_price
+        new_price = product.price
     product.is_available = True
     product.save()
+    send_telegram_product_restored(product, price_changed, old_price, new_price)
     messages.success(request, f'"{product.name}" mahsuloti qayta tiklandi')
     return redirect('admin_archived_products')

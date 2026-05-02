@@ -5,6 +5,10 @@ echo "Installing dependencies..."
 pip install --upgrade pip
 pip install -r requirements.txt
 
+echo "Creating media directories..."
+mkdir -p media/categories
+mkdir -p media/products
+
 echo "Collecting static files..."
 python manage.py collectstatic --noinput
 
