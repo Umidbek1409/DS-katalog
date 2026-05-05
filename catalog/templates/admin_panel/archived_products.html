@@ -5,6 +5,58 @@
 {% block content %}
 {% csrf_token %}
 
+<div class="donut-chart-card" id="donutChartCard">
+  <div class="donut-chart-wrapper">
+    <svg id="donutSvg" viewBox="-50 -50 360 360" width="260" height="260">
+      <defs>
+        <linearGradient id="availableGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:#00b894;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#6c5ce7;stop-opacity:1" />
+        </linearGradient>
+      </defs>
+      <!-- Background circle (track) -->
+      <circle cx="130" cy="130" r="100" fill="none" stroke="#2d2d4e" stroke-width="28" opacity="0.3"/>
+      <!-- Out of stock segment -->
+      <circle id="donutOos" cx="130" cy="130" r="100" fill="none" stroke="#C0392B" stroke-width="28"
+        stroke-dasharray="0 9999" stroke-dashoffset="0" stroke-linecap="butt"
+        transform="rotate(-90 130 130)"/>
+      <!-- Available segment -->
+      <circle id="donutAvailable" cx="130" cy="130" r="100" fill="none" stroke="url(#availableGradient)" stroke-width="28"
+        stroke-dasharray="0 9999" stroke-dashoffset="0" stroke-linecap="butt"
+        transform="rotate(-90 130 130)"/>
+      <!-- Leader line: Available -->
+      <g id="leaderAvailable" style="opacity:0;">
+        <line x1="0" y1="0" x2="0" y2="0" stroke="#00b894" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <polygon points="0,0" fill="#00b894"/>
+        <text x="0" y="0" class="leader-label" fill="#00b894"></text>
+        <text x="0" y="0" class="leader-value" fill="#00b894"></text>
+        <text x="0" y="0" class="leader-percent" fill="#00b894"></text>
+      </g>
+      <!-- Leader line: Out of Stock -->
+      <g id="leaderOos" style="opacity:0;">
+        <line x1="0" y1="0" x2="0" y2="0" stroke="#C0392B" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <polygon points="0,0" fill="#C0392B"/>
+        <text x="0" y="0" class="leader-label" fill="#C0392B"></text>
+        <text x="0" y="0" class="leader-value" fill="#C0392B"></text>
+        <text x="0" y="0" class="leader-percent" fill="#C0392B"></text>
+      </g>
+      <!-- Center text -->
+      <text x="130" y="118" text-anchor="middle" class="donut-center-title">{{ catalog_name }}</text>
+      <text x="130" y="140" text-anchor="middle" class="donut-center-total">Jami: {{ total_products }} ta</text>
+    </svg>
+  </div>
+  <div class="donut-legend-inline">
+    <div class="legend-item">
+      <span class="legend-dot" style="background: linear-gradient(135deg, #00b894, #6c5ce7);"></span>
+      <span>Mavjud: <strong id="legendAvailable">{{ available_products }}</strong> ta</span>
+    </div>
+    <div class="legend-item">
+      <span class="legend-dot" style="background: #C0392B;"></span>
+      <span>Yo'q: <strong id="legendOos">{{ out_of_stock_count }}</strong> ta (<strong id="legendPercent">{{ out_of_stock_percent }}</strong>%)</span>
+    </div>
+  </div>
+</div>
+
 <div class="action-row">
   <h2>Katalogda qolmagan mahsulotlar <span class="count-badge">{{ products|length }} ta</span></h2>
   <div style="display:flex; gap:10px; align-items:center;">
@@ -19,10 +71,10 @@
 
 <div class="filter-bar">
   <label for="category-filter">Kategoriya bo'yicha:</label>
-  <select id="category-filter" onchange="window.location.href='?category='+this.value">
+  <select id="category-filter">
     <option value="">Barchasi</option>
     {% for cat in categories %}
-    <option value="{{ cat.id }}" {% if selected_category == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
+    <option value="{{ cat.id }}" {% if selected_category == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.name }} ({{ cat.total_products_count }} ta, mavjud: {{ cat.available_count }})</option>
     {% endfor %}
   </select>
 </div>
@@ -78,6 +130,87 @@
 {% endif %}
 
 <style>
+  /* Glassmorphism Donut Chart Card */
+  .donut-chart-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 28px 32px;
+    margin-bottom: 28px;
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    border: 1px solid rgba(0,0,0,0.08);
+    color: #333;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  .donut-chart-wrapper {
+    flex-shrink: 0;
+    width: 260px;
+    height: 260px;
+  }
+
+  #donutSvg {
+    overflow: visible;
+  }
+
+  .donut-center-title {
+    font-size: 15px;
+    font-weight: 600;
+    fill: #1a1a2e;
+    letter-spacing: 0.3px;
+  }
+
+  .donut-center-total {
+    font-size: 12px;
+    fill: #666;
+  }
+
+  .leader-label {
+    font-size: 10px;
+    font-weight: 600;
+    fill: #333;
+  }
+
+  .leader-value {
+    font-size: 11px;
+    font-weight: 500;
+    fill: #555;
+  }
+
+  .leader-percent {
+    font-size: 12px;
+    font-weight: 700;
+    fill: #333;
+  }
+
+  .donut-legend-inline {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    color: #333;
+  }
+
+  .legend-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .legend-item strong {
+    color: #1a1a2e;
+    font-weight: 700;
+  }
+
   .table-scroll {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
@@ -156,5 +289,218 @@
   .col-price { min-width: 80px; white-space: nowrap; }
   .col-status { min-width: 110px; }
   .col-actions { min-width: 160px; }
+
+  /* Mobil uchun */
+@media (max-width: 768px) {
+  .donut-chart-card {
+    flex-direction: column;  /* Vertikal joylashuv */
+    align-items: center;  /* Markazlash */
+    padding: 20px 16px;
+    gap: 24px;
+  }
+  .donut-chart-wrapper {
+    width: 220px;  /* Kichikroq */
+    height: 220px;
+  }
+  #donutSvg {
+    width: 220px;
+    height: 220px;
+  }
+  .donut-legend-inline {
+    width: 100%;
+    align-items: center;  /* Markazlash */
+  }
+  .legend-item {
+    justify-content: center;
+    font-size: 13px;
+  }
+}
 </style>
+
+<script>
+(function() {
+  const RADIUS = 100;
+  const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+  const ANIM_DURATION = 1200;
+
+  const donutOos = document.getElementById('donutOos');
+  const donutAvailable = document.getElementById('donutAvailable');
+  const leaderAvailable = document.getElementById('leaderAvailable');
+  const leaderOos = document.getElementById('leaderOos');
+  const donutCenterTitle = document.querySelector('.donut-center-title');
+  const donutCenterTotal = document.querySelector('.donut-center-total');
+  const legendAvailable = document.getElementById('legendAvailable');
+  const legendOos = document.getElementById('legendOos');
+  const legendPercent = document.getElementById('legendPercent');
+
+  let currentAnim = null;
+
+  function setLeaderLine(groupEl, angleDeg, label, value, percent, color) {
+    const cx = 130, cy = 130, r = 100;
+    const rad = (angleDeg * Math.PI) / 180;
+    const ptX = cx + r * Math.cos(rad);
+    const ptY = cy - r * Math.sin(rad);
+    const lineLen = 60;  // 48 o'rniga 60
+    const textOffset = 18;  // 14 o'rniga 18
+    const isRight = Math.cos(rad) > 0;
+    const lx2 = ptX + (isRight ? lineLen : -lineLen);
+    const ly2 = ptY;  // +12/-12 o'chirildi - to'g'ri chiziq
+    const line = groupEl.querySelector('line');
+    line.setAttribute('x1', ptX);
+    line.setAttribute('y1', ptY);
+    line.setAttribute('x2', lx2);
+    line.setAttribute('y2', ly2);
+    line.setAttribute('stroke', color);
+    const arrow = groupEl.querySelector('polygon');
+    const arrowSize = 6;
+    if (isRight) {
+      arrow.setAttribute('points', `${lx2},${ly2} ${lx2-arrowSize},${ly2-arrowSize} ${lx2-arrowSize},${ly2+arrowSize}`);
+    } else {
+      arrow.setAttribute('points', `${lx2},${ly2} ${lx2+arrowSize},${ly2-arrowSize} ${lx2+arrowSize},${ly2+arrowSize}`);
+    }
+    arrow.setAttribute('fill', color);
+    const lbls = groupEl.querySelectorAll('text');
+    const tx = isRight ? lx2 + textOffset : lx2 - textOffset;
+    lbls[0].setAttribute('x', tx);
+    lbls[0].setAttribute('y', ly2 - 14);  // -12 o'rniga -14
+    lbls[0].textContent = label;
+    lbls[0].setAttribute('text-anchor', isRight ? 'start' : 'end');
+    lbls[0].setAttribute('fill', color);
+    lbls[1].setAttribute('x', tx);
+    lbls[1].setAttribute('y', ly2 + 2);
+    lbls[1].textContent = value;
+    lbls[1].setAttribute('text-anchor', isRight ? 'start' : 'end');
+    lbls[1].setAttribute('fill', color);
+    lbls[2].setAttribute('x', tx);
+    lbls[2].setAttribute('y', ly2 + 18);  // +16 o'rniga +18
+    lbls[2].textContent = percent;
+    lbls[2].setAttribute('text-anchor', isRight ? 'start' : 'end');
+    lbls[2].setAttribute('fill', color);
+    groupEl.style.opacity = 1;
+  }
+
+  function animateDonut(total, available, outOfStock, catalogName, outOfStockPercent) {
+    if (currentAnim) cancelAnimationFrame(currentAnim);
+
+    const availablePct = total > 0 ? (available / total) * 100 : 0;
+    const oosPct = total > 0 ? (outOfStock / total) * 100 : 0;
+
+    const availDash = (availablePct / 100) * CIRCUMFERENCE;
+    const oosDash = (oosPct / 100) * CIRCUMFERENCE;
+
+    leaderAvailable.style.opacity = 0;
+    leaderOos.style.opacity = 0;
+
+    const startTime = performance.now();
+
+    function step(now) {
+      const elapsed = now - startTime;
+      const t = Math.min(elapsed / ANIM_DURATION, 1);
+      const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+
+      const currentAvailLen = availDash * ease;
+      const currentOosLen = oosDash * ease;
+
+      donutAvailable.setAttribute('stroke-dasharray', `${currentAvailLen} ${CIRCUMFERENCE}`);
+      donutAvailable.setAttribute('stroke-dashoffset', 0);
+
+      donutOos.setAttribute('stroke-dasharray', `${currentOosLen} ${CIRCUMFERENCE}`);
+      donutOos.setAttribute('stroke-dashoffset', -currentAvailLen);
+
+      if (t >= 1) {
+        donutAvailable.setAttribute('stroke-dasharray', `${availDash} ${CIRCUMFERENCE - availDash}`);
+        donutOos.setAttribute('stroke-dasharray', `${oosDash} ${CIRCUMFERENCE - oosDash}`);
+        donutOos.setAttribute('stroke-dashoffset', -availDash);
+
+        if (total > 0) {
+          const availAngle = (availablePct / 100) * 360;
+          const oosAngle = (oosPct / 100) * 360;
+
+          if (availablePct > 0) {
+            const availMidAngle = -90 + (availAngle / 2);
+            setLeaderLine(leaderAvailable, availMidAngle, 'Mavjud mahsulotlar', available + ' ta', Math.round(availablePct) + '%', '#00b894');
+          } else {
+            leaderAvailable.style.opacity = 0;
+          }
+
+          if (oosPct > 0) {
+            const oosMidAngle = -90 + availAngle + (oosAngle / 2);
+            setLeaderLine(leaderOos, oosMidAngle, 'Yo\'q mahsulotlar', outOfStock + ' ta', Math.round(oosPct) + '%', '#C0392B');
+          } else {
+            leaderOos.style.opacity = 0;
+          }
+        }
+      } else {
+        currentAnim = requestAnimationFrame(step);
+      }
+    }
+
+    currentAnim = requestAnimationFrame(step);
+
+    donutCenterTitle.textContent = catalogName;
+    donutCenterTotal.textContent = 'Jami: ' + total + ' ta';
+    legendAvailable.textContent = available;
+    legendOos.textContent = outOfStock;
+    legendPercent.textContent = Math.round(outOfStockPercent);
+  }
+
+  const initialTotal = parseInt('{{ total_products|default:0 }}');
+  const initialAvailable = parseInt('{{ available_products|default:0 }}');
+  const initialOos = parseInt('{{ out_of_stock_count|default:0 }}');
+  const initialCatalog = '{{ catalog_name|default:"Barchasi" }}';
+  const initialOosPct = parseFloat('{{ out_of_stock_percent|default:0 }}');
+
+  if (initialTotal > 0) {
+    animateDonut(initialTotal, initialAvailable, initialOos, initialCatalog, initialOosPct);
+  }
+
+  const categoryFilter = document.getElementById('category-filter');
+  const productsTableBody = document.querySelector('.table-container table tbody');
+  const productsTable = document.querySelector('.table-container');
+  const emptyBanner = document.querySelector('.empty-banner');
+  const countBadge = document.querySelector('.count-badge');
+
+  if (categoryFilter) {
+    categoryFilter.addEventListener('change', function() {
+      const catId = this.value;
+      const statsUrl = '{% url "admin_archived_stats_api" %}' + (catId ? '?category=' + catId : '');
+
+      fetch(statsUrl)
+        .then(r => r.json())
+        .then(data => {
+          animateDonut(data.total_products, data.available_products, data.out_of_stock_count, data.catalog_name, data.out_of_stock_percent);
+        })
+        .catch(() => {
+          console.error('Stats API xatosi');
+        });
+
+      fetch(window.location.pathname + (catId ? '?category=' + catId : ''))
+        .then(r => r.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(html, 'text/html');
+          const newTbody = doc.querySelector('.table-container table tbody');
+          const newEmpty = doc.querySelector('.empty-banner');
+          const newCount = doc.querySelector('.count-badge');
+
+          if (productsTableBody && newTbody) {
+            productsTableBody.innerHTML = newTbody.innerHTML;
+            if (newCount) countBadge.textContent = newCount.textContent;
+          } else if (newEmpty) {
+            if (productsTable) productsTable.style.display = 'none';
+            const existingEmpty = document.querySelector('.empty-banner');
+            if (existingEmpty) {
+              existingEmpty.innerHTML = newEmpty.innerHTML;
+            } else {
+              productsTable.insertAdjacentHTML('afterend', newEmpty.outerHTML);
+            }
+          }
+        })
+        .catch(() => {
+          console.error('Mahsulotlar ro\'yxatini yangilashda xato');
+        });
+    });
+  }
+})();
+</script>
 {% endblock %}

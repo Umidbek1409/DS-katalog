@@ -10,7 +10,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
-from django.db.models import Count, Case, When, IntegerField
+from django.db.models import Count, Case, When, IntegerField, Q
 from django.utils import timezone
 from datetime import timedelta
 from django.utils.dateparse import parse_datetime
@@ -214,7 +214,7 @@ def send_order_telegram(request):
             subtotal = item['price'] * item['qty']
             total += subtotal
             lines.append(
-                f"{index}. {item['name']} - {item['qty']}x = "
+                f"{index}. <i>{item['name']}</i>: <b>{item['qty']}x</b> = "
                 f"{subtotal:,.0f} so'm"
             )
         
@@ -226,7 +226,8 @@ def send_order_telegram(request):
         url = f"https://api.telegram.org/bot{tg['token']}/sendMessage"
         requests.post(url, data={
             "chat_id": tg['owner_id'],
-            "text": message
+            "text": message,
+            "parse_mode": "HTML"
         })
         
         return JsonResponse({'success': True})
@@ -588,15 +589,75 @@ def toggle_product_availability(request):
 
 @admin_required
 def archived_products(request):
-    categories = Category.objects.order_by('order', 'name')
+    categories = Category.objects.order_by('order', 'name').annotate(
+        total_products_count=Count('products'),
+        available_count=Count('products', filter=Q(products__is_available=True)),
+    )
     category_filter = request.GET.get('category', '')
-    products = Product.objects.filter(is_available=False).select_related('category').order_by('category__order', 'order', 'name')
+
     if category_filter:
-        products = products.filter(category_id=category_filter)
+        filtered_products = Product.objects.filter(category_id=category_filter, is_available=False).select_related('category').order_by('category__order', 'order', 'name')
+        stats = Product.objects.filter(category_id=category_filter).aggregate(
+            total=Count('id'),
+            available=Count('id', filter=Q(is_available=True)),
+        )
+        catalog_name = categories.get(id=category_filter).name if categories.filter(id=category_filter).exists() else 'Noma\'lum'
+    else:
+        filtered_products = Product.objects.filter(is_available=False).select_related('category').order_by('category__order', 'order', 'name')
+        stats = Product.objects.aggregate(
+            total=Count('id'),
+            available=Count('id', filter=Q(is_available=True)),
+        )
+        catalog_name = 'Barchasi'
+
+    total_products = stats['total'] or 0
+    available_products = stats['available'] or 0
+    out_of_stock_count = total_products - available_products
+    out_of_stock_percent = round((out_of_stock_count / total_products * 100) if total_products > 0 else 0, 1)
+
     return render(request, 'admin_panel/archived_products.html', {
-        'products': products,
+        'products': filtered_products,
         'categories': categories,
         'selected_category': category_filter,
+        'catalog_name': catalog_name,
+        'total_products': total_products,
+        'available_products': available_products,
+        'out_of_stock_count': out_of_stock_count,
+        'out_of_stock_percent': out_of_stock_percent,
+    })
+
+
+@admin_required
+def archived_stats_api(request):
+    category_filter = request.GET.get('category', '')
+
+    if category_filter:
+        stats = Product.objects.filter(category_id=category_filter).aggregate(
+            total=Count('id'),
+            available=Count('id', filter=Q(is_available=True)),
+        )
+        try:
+            catalog_name = Category.objects.get(id=category_filter).name
+        except Category.DoesNotExist:
+            catalog_name = 'Noma\'lum'
+    else:
+        stats = Product.objects.aggregate(
+            total=Count('id'),
+            available=Count('id', filter=Q(is_available=True)),
+        )
+        catalog_name = 'Barchasi'
+
+    total = stats['total'] or 0
+    available = stats['available'] or 0
+    out_of_stock = total - available
+    out_of_stock_percent = round((out_of_stock / total * 100) if total > 0 else 0, 1)
+
+    return JsonResponse({
+        'catalog_name': catalog_name,
+        'total_products': total,
+        'available_products': available,
+        'out_of_stock_count': out_of_stock,
+        'out_of_stock_percent': out_of_stock_percent,
     })
 
 

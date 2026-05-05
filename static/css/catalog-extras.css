@@ -272,13 +272,13 @@
   bottom: 0;
   left: 0;
   right: 0;
-  height: 60px;
+  height: auto;  /* 60px o'rniga auto */
   background: #1a1a2e;
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 20px;
+  padding: 10px 20px;  /* 0 20px o'rniga 10px 20px */
   z-index: 900;
   transform: translateY(100%);
   transition: transform 0.4s ease;
@@ -289,7 +289,13 @@
   transform: translateY(0);
 }
 
-.cart-bar-left {
+.cart-bar-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;  /* Ikki qator orasidagi masofa */
+}
+
+.cart-bar-top {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -305,7 +311,9 @@
 
 .cart-total {
   font-weight: 600;
-  font-size: 1rem;
+  font-size: 0.9rem;
+  color: rgba(255,255,255,0.8);
+  padding-left: 28px;  /* Ikonka kengligi + gap */
 }
 
 .cart-bar button {
@@ -881,3 +889,43 @@
   color: #28a745 !important;
 }
 
+@media (max-width: 480px) {
+  .cart-bar {
+    padding: 8px 12px;
+  }
+  
+  .cart-bar-info {
+    gap: 1px;
+  }
+  
+  .cart-total {
+    font-size: 0.85rem;
+    padding-left: 26px;
+  }
+  
+  .cart-bar button {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+  }
+}
+
+/* @media (max-width: 480px) {
+  .cart-bar {
+    height: auto;
+    padding: 10px 16px;
+    flex-wrap: wrap;
+  }
+  
+  .cart-bar-left {
+    font-size: 0.9rem;
+  }
+  
+  .cart-total {
+    font-size: 0.9rem;
+  }
+  
+  .cart-bar button {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+  }
+} */

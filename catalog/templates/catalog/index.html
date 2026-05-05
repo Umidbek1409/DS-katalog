@@ -123,11 +123,13 @@
 
   <!-- Cart fixed bar -->
   <div class="cart-bar" id="cartBar">
-    <div class="cart-bar-left">
-      <span class="cart-icon">&#128722;</span>
-      <span class="cart-count" id="cartCount">0</span> ta mahsulot
+    <div class="cart-bar-info">
+      <div class="cart-bar-top">
+        <span class="cart-icon">🛒</span>
+        <span class="cart-count" id="cartCount">0</span> ta mahsulot
+      </div>
+      <span class="cart-total">Jami: <span id="cartTotal">0</span> so'm</span>
     </div>
-    <span class="cart-total">Jami: <span id="cartTotal">0</span> so'm</span>
     <button id="viewCartBtn">Savatni ko'rish</button>
   </div>
 
@@ -329,7 +331,7 @@
             totalPrice += item.price * item.qty;
         });
 
-        countEl.textContent = totalQty + ' ta mahsulot';
+        countEl.textContent = totalQty;
         totalEl.textContent = totalPrice.toLocaleString() + " so'm";
         cartBar.classList.add('visible');
     }

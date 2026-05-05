@@ -22,6 +22,7 @@ urlpatterns = [
     path('admin-panel/products/toggle-availability/', views.toggle_product_availability, name='admin_toggle_product_availability'),
     path('admin-panel/archived/', views.archived_products, name='admin_archived_products'),
     path('admin-panel/archived/<int:product_id>/restore/', views.restore_product, name='admin_restore_product'),
+    path('admin-panel/api/archived-stats/', views.archived_stats_api, name='admin_archived_stats_api'),
     path('admin-panel/settings/', views.admin_settings, name='admin_settings'),
     path('send-order/', views.send_order_telegram, name='send_order_telegram'),
 ]
