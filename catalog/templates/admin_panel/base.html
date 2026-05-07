@@ -21,6 +21,7 @@
       <li><a href="{% url 'admin_product_list' %}" class="{% if request.resolver_match.url_name == 'admin_product_list' or request.resolver_match.url_name == 'admin_product_add' or request.resolver_match.url_name == 'admin_product_edit' %}active{% endif %}">Mahsulotlar</a></li>
       <li><a href="{% url 'admin_archived_products' %}" class="{% if request.resolver_match.url_name == 'admin_archived_products' %}active{% endif %}">Yo'q mahsulotlar</a></li>
       <li><a href="{% url 'admin_settings' %}" class="{% if request.resolver_match.url_name == 'admin_settings' %}active{% endif %}">Sozlamalar</a></li>
+      <li><a href="{% url 'admin_jadval' %}" class="{% if 'jadval' in request.resolver_match.url_name %}active{% endif %}">Jadval</a></li>
       <li><a href="/">Saytni ko'rish</a></li>
       <li><a href="{% url 'admin_logout' %}">Chiqish</a></li>
     </ul>

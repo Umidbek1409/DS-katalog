@@ -95,3 +95,40 @@ class Product(models.Model):
         if not self.previous_price or not self.price_changed_at:
             return False
         return timezone.now() <= self.price_changed_at + timedelta(days=7)
+
+
+class DailySchedule(models.Model):
+    DAYS_OF_WEEK = [
+        (0, 'Dushanba'),
+        (1, 'Seshanba'),
+        (2, 'Chorshanba'),
+        (3, 'Payshanba'),
+        (4, 'Juma'),
+        (5, 'Shanba'),
+        (6, 'Yakshanba'),
+    ]
+
+    day_of_week = models.IntegerField(choices=DAYS_OF_WEEK, unique=True)
+    region1 = models.CharField(max_length=100, blank=True, null=True, verbose_name='1-xudud')
+    region2 = models.CharField(max_length=100, blank=True, null=True, verbose_name='2-xudud')
+    region3 = models.CharField(max_length=100, blank=True, null=True, verbose_name='3-xudud')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['day_of_week']
+        verbose_name = 'Kunlik jadval'
+        verbose_name_plural = 'Jadval'
+
+    def __str__(self):
+        return self.get_day_of_week_display()
+
+    def get_regions(self):
+        regions = []
+        if self.region1:
+            regions.append(self.region1)
+        if self.region2:
+            regions.append(self.region2)
+        if self.region3:
+            regions.append(self.region3)
+        return regions

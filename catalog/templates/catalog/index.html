@@ -12,17 +12,22 @@
   <link rel="stylesheet" href="{% static 'css/catalog-extras.css' %}">
 </head>
 <body>
-  <header class="header">
-    <div class="container">
-      <a href="#" class="logo">{{ site_settings.site_name }}</a>
-      <div class="search-container">
-        <input type="text" id="search-input" class="search-input" placeholder="Qidirish..." aria-label="Mahsulotlarni qidirish">
+    <header class="header">
+      <div class="container">
+        <a href="#" class="logo">{{ site_settings.site_name }}</a>
+        <div class="search-container">
+          <input type="text" id="search-input" class="search-input" placeholder="Qidirish..." aria-label="Mahsulotlarni qidirish">
+        </div>
+        <span class="tagline">Sifatli mahsulotlar</span>
       </div>
-      <span class="tagline">Sifatli mahsulotlar</span>
-    </div>
-  </header>
+    </header>
 
-  <nav class="category-nav">
+    <!-- Today's allowed regions banner -->
+    <div id="today-regions-banner" style="background: #e8f5e8; color: #2e7d32; padding: 12px 20px; margin: 0 20px 20px 20px; border-radius: 8px; font-size: 14px; text-align: center; display: none;">
+      Bugun quyidagi xududlardan buyurtmalar qabul qilinadi: <span id="today-regions-list"></span>
+    </div>
+
+    <nav class="category-nav">
     <div class="container">
       <div class="category-tabs" id="category-tabs" role="tablist">
         <button class="category-tab active" data-category="all">Barchasi</button>
@@ -159,10 +164,12 @@
            <label style="display:block; font-size:12px; font-weight:500; color:#888; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:6px;">Ismingiz *</label>
            <input type="text" id="checkout-name" placeholder="To'liq ismingiz" style="width:100%; padding:11px 14px; border:1.5px solid #e0e0e0; border-radius:8px; font-size:15px; color:#1a1a2e; outline:none; transition:border-color 0.2s;" onfocus="this.style.borderColor='#1a1a2e'" onblur="this.style.borderColor='#e0e0e0'">
          </div>
-         <div class="form-group" style="margin-bottom:1rem;">
-           <label style="display:block; font-size:12px; font-weight:500; color:#888; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:6px;">Manzilingiz *</label>
-           <input type="text" id="checkout-address" placeholder="Yetkazib berish manzili" style="width:100%; padding:11px 14px; border:1.5px solid #e0e0e0; border-radius:8px; font-size:15px; color:#1a1a2e; outline:none; transition:border-color 0.2s;" onfocus="this.style.borderColor='#1a1a2e'" onblur="this.style.borderColor='#e0e0e0'">
-         </div>
+        <div class="form-group" style="margin-bottom:1rem;">
+            <label style="display:block; font-size:12px; font-weight:500; color:#888; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:6px;">Manzilingiz *</label>
+            <select id="checkout-address" style="width:100%; padding:12px 14px; border:1.5px solid #e0e0e0; border-radius:8px; font-size:15px; color:#1a1a2e;">
+                <option value="">Xududni tanlang...</option>
+            </select>
+        </div>
          <div class="form-group" style="margin-bottom:1rem;">
            <label style="display:block; font-size:12px; font-weight:500; color:#888; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:6px;">Telefon raqamingiz *</label>
            <input type="tel" id="checkout-phone" placeholder="+998 90 123 45 67" style="width:100%; padding:11px 14px; border:1.5px solid #e0e0e0; border-radius:8px; font-size:15px; color:#1a1a2e; outline:none; transition:border-color 0.2s;" onfocus="this.style.borderColor='#1a1a2e'" onblur="this.style.borderColor='#e0e0e0'">
@@ -336,6 +343,68 @@
         cartBar.classList.add('visible');
     }
 
+    // Fetch today's regions for the address field
+    function loadTodayRegions() {
+        fetch('/admin-panel/get-today-regions/')
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    const regionsDiv = document.getElementById('today-regions-display');
+                    const addressInput = document.getElementById('checkout-address');
+                    
+                    if (data.regions.length > 0) {
+                        regionsDiv.innerHTML = `Bugungi kun: <strong>${data.day_name}</strong> | Mavjud xududlar: ${data.regions.join(', ')}`;
+                        
+                        // Clear address field and set up click-to-select behavior
+                        addressInput.value = '';
+                        addressInput.placeholder = 'Xududni tanlang (bosish orqali)';
+                        
+                        // Create clickable region buttons
+                        const regionsContainer = document.createElement('div');
+                        regionsContainer.style.marginTop = '10px';
+                        regionsContainer.style.display = 'flex';
+                        regionsContainer.style.flexWrap = 'wrap';
+                        regionsContainer.style.gap = '8px';
+                        
+                        data.regions.forEach(region => {
+                            const btn = document.createElement('button');
+                            btn.textContent = region;
+                            btn.style.background = '#1a1a2e';
+                            btn.style.color = 'white';
+                            btn.style.border = 'none';
+                            btn.style.padding = '6px 12px';
+                            btn.style.borderRadius = '4px';
+                            btn.style.fontSize = '14px';
+                            btn.style.cursor = 'pointer';
+                            btn.style.transition = 'opacity 0.2s';
+                            btn.onmouseover = () => btn.style.opacity = '0.8';
+                            btn.onmouseout = () => btn.style.opacity = '1';
+                            btn.onclick = () => {
+                                addressInput.value = region;
+                                // Focus on comment field after selecting region
+                                document.getElementById('checkout-comment').focus();
+                            };
+                            regionsContainer.appendChild(btn);
+                        });
+                        
+                        // Clear previous content and add buttons
+                        regionsDiv.innerHTML = '';
+                        regionsDiv.appendChild(document.createElement('div')).innerHTML = `Bugungi kun: <strong>${data.day_name}</strong>`;
+                        regionsDiv.appendChild(regionsContainer);
+                    } else {
+                        regionsDiv.innerHTML = `<span style="color: #e74c3c;">Bugungi kun: <strong>${data.day_name}</strong> | Xududlar belgilanmagan</span>`;
+                        addressInput.placeholder = 'Manzilingizni kiriting...';
+                    }
+                } else {
+                    console.error('Failed to load regions:', data.error);
+                }
+            })
+            .catch(err => {
+                console.error('Error loading regions:', err);
+                document.getElementById('today-regions-display').innerHTML = '<span style="color: #e74c3c;">Xududlarni yuklashda xatolik yuz berdi</span>';
+            });
+    }
+
     // Alias for backward compatibility
     function updateCartBar() {
         updateCartUI();
@@ -443,14 +512,147 @@
       renderCartModal();
     });
 
-    // Initialize cart bar on page load
-    document.addEventListener('DOMContentLoaded', updateCartUI);
+     // Initialize cart bar on page load
+     document.addEventListener('DOMContentLoaded', function() {
+         updateCartUI();
+         loadAllRegionsForSelect();
+         loadTodayRegionsBanner();
+     });
 
-    // Checkout functions
+    // Load all regions for the select dropdown
+    function loadAllRegionsForSelect() {
+        fetch('/admin-panel/get-all-regions/')
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    const addressSelect = document.getElementById('checkout-address');
+                    
+                    // Clear existing options except the first placeholder
+                    addressSelect.innerHTML = '<option value="">Xududni tanlang...</option>';
+                    
+                    if (data.regions.length > 0) {
+                        // Add each region as an option
+                        data.regions.forEach(region => {
+                            const option = document.createElement('option');
+                            option.value = region;
+                            option.textContent = region;
+                            addressSelect.appendChild(option);
+                        });
+                    } else {
+                        // Show disabled option if no regions exist
+                        const option = document.createElement('option');
+                        option.value = '';
+                        option.textContent = 'Hech qanday xudud kiritilmagan. Avval admin panelda jadvalni to\'ldiring.';
+                        option.disabled = true;
+                        option.selected = true;
+                        addressSelect.appendChild(option);
+                    }
+                } else {
+                    // Show error message
+                    const option = document.createElement('option');
+                    option.value = '';
+                    option.textContent = 'Xududlarni yuklashda xatolik yuz berdi';
+                    option.disabled = true;
+                    option.selected = true;
+                    document.getElementById('checkout-address').appendChild(option);
+                }
+            })
+            .catch(err => {
+                console.error('Error loading regions:', err);
+                // Show error message
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = 'Xududlarni yuklashda xatolik yuz berdi';
+                option.disabled = true;
+                option.selected = true;
+                document.getElementById('checkout-address').appendChild(option);
+            });
+    }
+
+    // Load all regions for the dropdown
+    function loadAllRegionsForDropdown() {
+        fetch('/admin-panel/get-all-regions/')
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    const regionList = document.getElementById('region-list');
+                    const searchInput = document.getElementById('region-search-input');
+                    
+                    if (data.regions.length > 0) {
+                        displayRegions(data.regions);
+                        
+                        // Add search functionality
+                        searchInput.addEventListener('input', function() {
+                            const searchTerm = this.value.toLowerCase().trim();
+                            const filteredRegions = data.regions.filter(region => 
+                                region.toLowerCase().includes(searchTerm)
+                            );
+                            displayRegions(filteredRegions);
+                        });
+                    } else {
+                        regionList.innerHTML = '<p style="color: #e74c3c; text-align: center; padding: 20px;">Hech qanday xudud kiritilmagan. Avval admin panelda jadvalni to\'ldiring.</p>';
+                    }
+                } else {
+                    document.getElementById('region-list').innerHTML = '<p style="color: #e74c3c; text-align: center; padding: 20px;">Xududlarni yuklashda xatolik yuz berdi</p>';
+                }
+            })
+            .catch(err => {
+                console.error('Error loading regions:', err);
+                document.getElementById('region-list').innerHTML = '<p style="color: #e74c3c; text-align: center; padding: 20px;">Xududlarni yuklashda xatolik yuz berdi</p>';
+            });
+    }
+
+    // Display regions in the dropdown
+    function displayRegions(regions) {
+        const regionList = document.getElementById('region-list');
+        
+        if (regions.length === 0) {
+            regionList.innerHTML = '<p style="color: #666; text-align: center; padding: 20px;">Hech narsa topilmadi</p>';
+            return;
+        }
+        
+        regionList.innerHTML = regions.map(region => `
+            <div class="region-item" style="padding: 8px 0; border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: background-color 0.2s;"
+                 onmouseover="this.style.backgroundColor='#f8f9fa'"
+                 onmouseout="this.style.backgroundColor='transparent'"
+                 onclick="selectRegion('${region.replace(/'/g, "\\'")}')">
+                ${region}
+            </div>
+        `).join('');
+    }
+
+    // Select a region and close dropdown
+    function selectRegion(region) {
+        document.getElementById('checkout-address').value = region;
+        hideRegionDropdown();
+        // Focus on comment field after selecting region
+        document.getElementById('checkout-comment').focus();
+    }
+
+    // Show region dropdown
+    function showRegionDropdown() {
+        document.getElementById('region-dropdown').style.display = 'block';
+    }
+
+    // Hide region dropdown
+    function hideRegionDropdown() {
+        document.getElementById('region-dropdown').style.display = 'none';
+    }
+
+    // Open checkout modal
     function openCheckoutModal() {
         closeCartModal();
         document.getElementById('checkout-overlay').style.display = 'flex';
     }
+
+    // Click outside to close dropdown
+    document.addEventListener('click', function(event) {
+        const dropdown = document.getElementById('region-dropdown');
+        const addressInput = document.getElementById('checkout-address');
+        if (!dropdown.contains(event.target) && !addressInput.contains(event.target)) {
+            hideRegionDropdown();
+        }
+    });
 
     function closeCheckoutModal() {
         document.getElementById('checkout-overlay').style.display = 'none';
@@ -479,6 +681,39 @@
             if (data.success) {
                 closeCheckoutModal();
                 showSuccessOverlay();
+            } else if (data.error === 'schedule_restriction') {
+                closeCheckoutModal();
+                // Format the message with colored regions
+                const todayRegions = data.today_regions || [];
+                const selectedRegion = data.selected_region || '';
+                const nextAvailableDate = data.next_available_date;
+                const nextAvailableWeekday = data.next_available_weekday;
+                
+                let message = '';
+                if (todayRegions.length > 0) {
+                    message = `Afuski siz tanlagan '<span style="background: #fff3e0; color: #f57c00; padding: 2px 6px; border-radius: 3px; font-weight: 500;">${selectedRegion}</span>' xududga bugun buyurtma qabul qila olmaymiz. Siz tanlagan '<span style="background: #fff3e0; color: #f57c00; padding: 2px 6px; border-radius: 3px; font-weight: 500;">${selectedRegion}</span>' xududga `;
+                    
+                    if (nextAvailableDate && nextAvailableWeekday !== null) {
+                        // Format date as dd.MM.yyyy
+                        const dayNames = {
+                            0: 'Dushanba',
+                            1: 'Seshanba',
+                            2: 'Chorshanba',
+                            3: 'Payshanba',
+                            4: 'Juma',
+                            5: 'Shanba',
+                            6: 'Yakshanba'
+                        };
+                        const dayName = dayNames[nextAvailableWeekday] || '';
+                        message += `<span style="background: #e8f5e8; color: #2e7d32; padding: 2px 6px; border-radius: 3px; font-weight: 500;">${nextAvailableDate} (${dayName})</span> sanada buyurtma qabul qilishimiz mumkin.`;
+                    } else {
+                        message += `hozirda jadvalda mavjud emas. Iltimos, boshqa xudud tanlang.`;
+                    }
+                } else {
+                    message = `Bugungi kun uchun hech qanday xudud belgilanmagan. Iltimos, keyinroq urinib ko'ring.`;
+                }
+                
+                showScheduleRestrictionModal(message);
             } else {
                 alert("Xatolik yuz berdi. Iltimos qayta urinib ko'ring.");
             }
@@ -496,28 +731,162 @@
     function closeCartModal() {
         document.getElementById('cartModal').classList.remove('active');
     }
-  function showCartToast(productName) {
-      const toast = document.getElementById('cart-toast');
-      document.getElementById('cart-toast-text').textContent =
-          '"' + productName + '" savatga qo\'shildi!';
-      toast.style.opacity = '1';
-      toast.style.transform = 'translateY(0)';
-      setTimeout(() => {
-          toast.style.opacity = '0';
-          toast.style.transform = 'translateY(10px)';
-      }, 2500);
-  }
 
-  function showSuccessOverlay() {
-      const overlay = document.getElementById('success-overlay');
-      overlay.style.display = 'flex';
-  }
+    function showCartToast(productName) {
+        const toast = document.getElementById('cart-toast');
+        document.getElementById('cart-toast-text').textContent =
+            '"' + productName + '" savatga qo\'shildi!';
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateY(0)';
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateY(10px)';
+        }, 2500);
+    }
 
-  function closeSuccessOverlay() {
-      document.getElementById('success-overlay').style.display = 'none';
-      localStorage.removeItem('cart');
-      updateCartUI();
-  }
+    function showSuccessOverlay() {
+        const overlay = document.getElementById('success-overlay');
+        overlay.style.display = 'flex';
+    }
+
+    function closeSuccessOverlay() {
+        document.getElementById('success-overlay').style.display = 'none';
+        localStorage.removeItem('cart');
+        updateCartUI();
+    }
+
+    function showScheduleRestrictionModal(message) {
+        // Create modal if it doesn't exist
+        let modal = document.getElementById('schedule-restriction-modal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'schedule-restriction-modal';
+            modal.style.display = 'none';
+            modal.style.position = 'fixed';
+            modal.style.inset = '0';
+            modal.style.background = 'rgba(0,0,0,0.7)';
+            modal.style.zIndex = '99999';
+            modal.style.alignItems = 'center';
+            modal.style.justifyContent = 'center';
+            
+            modal.innerHTML = `
+                <div style="
+                    background: white;
+                    border-radius: 20px;
+                    padding: 2.5rem 2rem;
+                    max-width: 400px;
+                    width: 90%;
+                    text-align: center;
+                    animation: successPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                ">
+                    <div style="
+                        width: 60px;
+                        height: 60px;
+                        background: #fff3cd;
+                        border-radius: 50%;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        margin: 0 auto 1.5rem;
+                        font-size: 30px;
+                        color: #856404;
+                    ">⚠️</div>
+                    <h2 style="color:#1a1a2e; font-size:20px; margin:0 0 1rem;">
+                        Buyurtma qabul qilinmadi
+                    </h2>
+                    <p id="schedule-message" style="color:#666; font-size:15px; line-height:1.6; margin:0 0 2rem;">
+                        Xududlarni ranglarda ajratib ko'rsatish uchun JavaScript bilan to'ldiriladi
+                    </p>
+                    <button onclick="closeScheduleRestrictionModal()" style="
+                        background: #1a1a2e;
+                        color: white;
+                        border: none;
+                        border-radius: 10px;
+                        padding: 13px 40px;
+                        font-size: 16px;
+                        font-weight: 600;
+                        cursor: pointer;
+                    ">Tushunarli</button>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+        
+        // We'll update the message content dynamically with colored regions
+        // The actual message formatting will be done in the sendOrder function's error handler
+        document.getElementById('schedule-message').innerHTML = message;
+        
+        modal.style.display = 'flex';
+    }
+
+    function closeScheduleRestrictionModal() {
+        const modal = document.getElementById('schedule-restriction-modal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    }
+    
+    // Region toggle functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        const regionCheckboxes = document.querySelectorAll('input[id^="region-"]');
+        const otherRegionInput = document.getElementById('checkout-other-region');
+        const addressInput = document.getElementById('checkout-address');
+        
+        // Handle "Boshqa" checkbox
+        document.getElementById('region-other').addEventListener('change', function() {
+            if (this.checked) {
+                otherRegionInput.style.display = 'block';
+                otherRegionInput.focus();
+            } else {
+                otherRegionInput.style.display = 'none';
+                otherRegionInput.value = '';
+            }
+            updateAddressField();
+        });
+        
+        // Handle other region checkboxes
+        regionCheckboxes.forEach(checkbox => {
+            if (checkbox.id !== 'region-other') {
+                checkbox.addEventListener('change', updateAddressField);
+            }
+        });
+        
+        // Handle other region input
+        otherRegionInput.addEventListener('input', updateAddressField);
+        
+        function updateAddressField() {
+            const selectedRegions = [];
+            
+            regionCheckboxes.forEach(checkbox => {
+                if (checkbox.checked) {
+                    if (checkbox.id === 'region-other') {
+                        const otherValue = otherRegionInput.value.trim();
+                        if (otherValue) {
+                            selectedRegions.push(otherValue);
+                        }
+                    } else {
+                        // Get the label text for the checkbox
+                        const label = checkbox.parentElement.querySelector('.toggle-label');
+                        if (label) {
+                            selectedRegions.push(label.textContent.trim());
+                        }
+                    }
+                }
+            });
+            
+            // Update address field with selected regions
+            if (selectedRegions.length > 0) {
+                addressInput.value = selectedRegions.join(', ');
+            } else {
+                // Clear address if no regions selected (but keep if user manually entered something)
+                // We'll only clear if the address field only contains region selections
+                const currentValue = addressInput.value.trim();
+                // Simple check: if it looks like just region names (comma separated), clear it
+                // This is a basic implementation - you might want to improve this logic
+                addressInput.value = currentValue; // For now, keep manual entries
+            }
+        }
+    });
   </script>
 
 <style>

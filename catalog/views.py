@@ -12,9 +12,9 @@ from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 from django.db.models import Count, Case, When, IntegerField, Q
 from django.utils import timezone
-from datetime import timedelta
+from datetime import timedelta, datetime
 from django.utils.dateparse import parse_datetime
-from .models import Category, Product, SiteSettings
+from .models import Category, Product, SiteSettings, DailySchedule
 from .decorators import admin_required
 
 
@@ -196,10 +196,66 @@ def send_order_telegram(request):
     try:
         data = json.loads(request.body)
         name = data.get('name', '')
-        address = data.get('address', '')
+        address = data.get('address', '')  # This is the selected region from dropdown
         phone = data.get('phone', '')
         comment = data.get('comment', '')
         cart = data.get('cart', [])
+        
+        # Check if order can be placed today based on schedule
+        today_weekday = datetime.now().weekday()  # 0=Monday, 6=Sunday
+        
+        try:
+            today_schedule = DailySchedule.objects.get(day_of_week=today_weekday)
+            today_regions = today_schedule.get_regions()
+            
+            # Filter out None/empty values
+            today_regions = [region for region in today_regions if region]
+            
+            # If there are regions specified for today, check if address (region) matches any
+            if today_regions:
+                region_matched = address and address in today_regions
+                
+                if not region_matched:
+                    # Find next available day for the selected region
+                    selected_region = address.strip() if address else ''
+                    days_ahead = 1
+                    next_available_date = None
+                    next_available_weekday = None
+                    while days_ahead <= 14:  # Check next 14 days
+                        check_date = datetime.now() + timedelta(days=days_ahead)
+                        check_weekday = check_date.weekday()
+                        try:
+                            check_schedule = DailySchedule.objects.get(day_of_week=check_weekday)
+                            check_regions = check_schedule.get_regions()
+                            check_regions = [r for r in check_regions if r]
+                            if selected_region and selected_region in check_regions:
+                                next_available_date = check_date
+                                next_available_weekday = check_weekday
+                                break
+                        except DailySchedule.DoesNotExist:
+                            pass
+                        days_ahead += 1
+                    
+                    # Prepare response data
+                    response_data = {
+                        'error': 'schedule_restriction',
+                        'today_regions': today_regions,
+                        'selected_region': selected_region,
+                    }
+                    
+                    if next_available_date:
+                        formatted_date = next_available_date.strftime('%d.%m.%Y')
+                        response_data['next_available_date'] = formatted_date
+                        response_data['next_available_weekday'] = next_available_weekday
+                    else:
+                        response_data['next_available_date'] = None
+                        response_data['next_available_weekday'] = None
+                    
+                    return JsonResponse(response_data, status=403)
+            # If no today_regions or region matched, proceed with order
+        except DailySchedule.DoesNotExist:
+            # No schedule set for today, allow order
+            pass
         
         lines = ["🛒 YANGI BUYURTMA\n"]
         lines.append(f"👤 {name}")
@@ -571,6 +627,113 @@ def admin_settings(request):
         'site_settings': site_settings,
         'errors': {},
     })
+
+
+@admin_required
+def admin_jadval(request):
+    # Get or create schedule entries for all days of the week
+    days_of_week = [0, 1, 2, 3, 4, 5, 6]  # Monday to Sunday
+    day_names = {
+        0: 'Dushanba',
+        1: 'Seshanba',
+        2: 'Chorshanba',
+        3: 'Payshanba',
+        4: 'Juma',
+        5: 'Shanba',
+        6: 'Yakshanba'
+    }
+
+    # Prepare list of day data for the template
+    days_data = []
+    for day in days_of_week:
+        obj, created = DailySchedule.objects.get_or_create(
+            day_of_week=day,
+            defaults={'region1': '', 'region2': '', 'region3': ''}
+        )
+        days_data.append({
+            'day_num': day,
+            'day_name': day_names[day],
+            'region1': obj.region1 or '',
+            'region2': obj.region2 or '',
+            'region3': obj.region3 or '',
+        })
+
+    if request.method == 'POST':
+        for day in days_of_week:
+            schedule_obj = DailySchedule.objects.get(day_of_week=day)
+            schedule_obj.region1 = request.POST.get(f'region1_{day}', '').strip() or None
+            schedule_obj.region2 = request.POST.get(f'region2_{day}', '').strip() or None
+            schedule_obj.region3 = request.POST.get(f'region3_{day}', '').strip() or None
+            schedule_obj.save()
+
+        messages.success(request, 'Jadval muvaffaqiyatli saqlandi')
+        return redirect('admin_jadval')
+
+    return render(request, 'admin_panel/jadval.html', {
+        'days_data': days_data,
+    })
+
+
+def get_today_regions(request):
+    """API endpoint to get today's regions for validation"""
+    if request.method != 'GET':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    
+    try:
+        today_weekday = datetime.now().weekday()  # 0=Monday, 6=Sunday
+        
+        try:
+            today_schedule = DailySchedule.objects.get(day_of_week=today_weekday)
+            today_regions = today_schedule.get_regions()
+            
+            # Filter out None/empty values
+            today_regions = [region for region in today_regions if region]
+            
+            return JsonResponse({
+                'success': True,
+                'regions': today_regions,
+                'today': today_weekday,
+                'day_name': dict(DailySchedule.DAYS_OF_WEEK)[today_weekday]
+            })
+        except DailySchedule.DoesNotExist:
+            # No schedule set for today
+            return JsonResponse({
+                'success': True,
+                'regions': [],
+                'today': today_weekday,
+                'day_name': dict(DailySchedule.DAYS_OF_WEEK)[today_weekday]
+            })
+    
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+def get_all_regions(request):
+    """API endpoint to get all unique regions from the entire week's schedule"""
+    if request.method != 'GET':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    
+    try:
+        # Get all schedule entries
+        all_schedules = DailySchedule.objects.all()
+        all_regions = set()
+        
+        for schedule in all_schedules:
+            regions = schedule.get_regions()
+            for region in regions:
+                if region:  # Skip None/empty values
+                    all_regions.add(region.strip())
+        
+        # Convert to sorted list
+        sorted_regions = sorted(list(all_regions))
+        
+        return JsonResponse({
+            'success': True,
+            'regions': sorted_regions
+        })
+    
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 
 @require_POST

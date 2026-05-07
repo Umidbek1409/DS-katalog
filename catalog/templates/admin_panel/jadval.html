@@ -1,0 +1,242 @@
+{% extends 'admin_panel/base.html' %}
+
+{% block title %}Jadval - Admin Panel{% endblock %}
+
+{% block topbar_title %}Haftalik Jadval - Xudavollik Toshkarobasi{% endblock %}
+
+{% block extra_css %}
+<style>
+    .jadval-container {
+        max-width: 1200px;
+        margin: 20px auto;
+        padding: 0 20px;
+    }
+    
+    .jadval-title {
+        text-align: center;
+        margin-bottom: 30px;
+        color: #2c3e50;
+    }
+    
+    .jadval-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        display: block;
+        overflow-x: auto;
+        max-width: 100%;
+    }
+    
+    .jadval-table th,
+    .jadval-table td {
+        padding: 15px;
+        text-align: left;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .jadval-table th {
+        background-color: #1a1a2e;
+        color: white;
+        font-weight: 600;
+    }
+    
+    .jadval-table tbody tr:hover {
+        background-color: #f5f5f5;
+    }
+    
+    .jadval-table td:first-child {
+        font-weight: 500;
+        color: #2c3e50;
+        width: 150px;
+    }
+    
+    .form-group {
+        margin-bottom: 15px;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 500;
+        color: #34495e;
+    }
+    
+    .form-group input {
+        width: 100%;
+        padding: 10px;
+        border: 2px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+        transition: border-color 0.3s;
+    }
+    
+    .form-group input:focus {
+        outline: none;
+        border-color: #3498db;
+    }
+    
+    .toggle-container {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+    
+    .toggle-label {
+        font-weight: 500;
+        color: #34495e;
+    }
+    
+    .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 26px;
+    }
+    
+    .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    
+    .toggle-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: .4s;
+        border-radius: 26px;
+    }
+    
+    .toggle-slider:before {
+        position: absolute;
+        content: "";
+        height: 20px;
+        width: 20px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: .4s;
+    }
+    
+    input:checked + .toggle-slider {
+        background-color: #2ecc71;
+    }
+    
+    input:checked + .toggle-slider:before {
+        transform: translateX(24px);
+    }
+    
+    .toggle-switch .toggle-label {
+        font-size: 12px;
+        color: #7f8c8d;
+        margin-left: 5px;
+    }
+    
+    .save-btn {
+        background-color: #27ae60;
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        font-size: 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        width: 100%;
+        max-width: 200px;
+        margin: 30px auto;
+        display: block;
+        transition: background-color 0.3s;
+    }
+    
+    .save-btn:hover {
+        background-color: #219a52;
+    }
+    
+    .day-name {
+        font-weight: 600;
+        color: #e74c3c;
+    }
+    
+    .empty-placeholder {
+        color: #95a5a6;
+        font-style: italic;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="jadval-container">
+    <h1 class="jadval-title">Haftalik Jadval - Xudavollik Toshkarobasi</h1>
+    <p class="text-center" style="color: #7f8c8d; margin-bottom: 30px;">
+        Har bir kun uchun 3 ta ixtiyoriy xudud kiriting. Xaridor buyurtma berayotganda, ushbu jadvalga ko'ra tekshiriladi.
+    </p>
+    
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+                
+                <form method="POST">
+                    {% csrf_token %}
+                    <div style="overflow-x:auto; margin-bottom: 20px;">
+                        <table class="jadval-table">
+                            <thead>
+                                <tr>
+                                    <th>Kun</th>
+                                    <th>1-Xudud</th>
+                                    <th>2-Xudud</th>
+                                    <th>3-Xudud</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for day in days_data %}
+                                    <tr>
+                                        <td>
+                                            <span class="day-name">{{ day.day_name }}</span>
+                                        </td>
+                                        <td>
+                                            <div class="form-group">
+                                                <input type="text" name="region1_{{ day.day_num }}" value="{{ day.region1 }}" placeholder="Birinchi xudud...">
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="form-group">
+                                                <input type="text" name="region2_{{ day.day_num }}" value="{{ day.region2 }}" placeholder="Ikkinchi xudud...">
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="form-group">
+                                                <input type="text" name="region3_{{ day.day_num }}" value="{{ day.region3 }}" placeholder="Uchinchi xudud...">
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+        
+        <button type="submit" class="save-btn">Jadvalni Saqlash</button>
+    </form>
+    
+    <div style="text-align: center; margin-top: 30px; color: #95a5a6; font-size: 14px;">
+        <p>Eslatma: Bo'sh maydonlar hisobga olinmaydi. Har bir kuni maksimal 3 ta xudud kiritishingiz mumkin.</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Add any JavaScript if needed
+    document.addEventListener('DOMContentLoaded', function() {
+        // Form validation or other JS can go here
+    });
+</script>
+{% endblock %}
